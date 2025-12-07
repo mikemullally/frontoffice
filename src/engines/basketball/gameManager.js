@@ -1,5 +1,6 @@
 // BASKETBALL GAME MANAGER
 // Manages quarters, timeouts, substitutions, fatigue
+import { basketballPossession } from './possessionEngine';
 
 export function createGame(homeTeam, awayTeam, settings = {}) {
   return {
@@ -64,12 +65,12 @@ export function startGame(game) {
   };
 }
 
-export function simulateGame(game, possessionEngine) {
+export function simulateGame(game) {
   let currentGame = startGame(game);
 
   // Simulate each quarter
   for (let q = 1; q <= currentGame.settings.quarters; q++) {
-    currentGame = simulateQuarter(currentGame, q, possessionEngine);
+    currentGame = simulateQuarter(currentGame, q, basketballPossession);
   }
 
   currentGame = {
