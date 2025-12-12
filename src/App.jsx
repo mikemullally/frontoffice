@@ -13,13 +13,15 @@ import { createLeague, addTeamToLeague, removeTeamFromLeague } from './core/comm
 import { createCompetition, generateSchedule, recordGameResult, COMPETITION_TYPES } from './core/competitionManager';
 import { getSportConfig } from './data/sportConfig';
 import { createGame, simulateGame, getGameSummary } from './engines/basketball/gameManager';
+import DemoDashboard from './components/DemoDashboard';
+import IntroScreen from './components/IntroScreen';
 
 export default function App() {
   const [career, setCareer] = useState(null);
   const [team, setTeam] = useState(null);
   const [league, setLeague] = useState(null);
   const [competition, setCompetition] = useState(null);
-  const [screen, setScreen] = useState('setup');
+  const [screen, setScreen] = useState('intro');
 
   const handleCareerComplete = ({ playerName, sport, role }) => {
     let newCareer = createNewCareer(playerName);
@@ -124,10 +126,20 @@ const handlePlayNextGame = () => {
   }
 };
 
-  // ========== CAREER SETUP ==========
-  if (screen === 'setup') {
-    return <CareerSetup onComplete={handleCareerComplete} />;
-  }
+// Intro Screen
+if (screen === 'intro' || screen === 'setup') {
+  return (
+    <IntroScreen 
+      onNewCareer={() => setScreen('career-setup')}
+      onContinue={() => alert('No saved career yet!')}
+    />
+  );
+}
+
+// Career Setup
+if (screen === 'career-setup') {
+  return <CareerSetup onComplete={handleCareerComplete} />;
+}
 
   // ========== TEAM MANAGER SCREENS ==========
   if (screen === 'team-dashboard') {
