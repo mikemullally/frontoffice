@@ -17,6 +17,8 @@ import DemoDashboard from './components/DemoDashboard';
 import IntroScreen from './components/IntroScreen';
 import LeagueSelect from './components/leagueSelect';
 import { getLeagueById, getTeamsForLeague } from './data/basketballLeagues';
+import { getLeagueById as getBasketballLeagueById, getTeamsForLeague as getBasketballTeams } from './data/basketballLeagues';
+import { getLeagueById as getSoccerLeagueById, getTeamsForLeague as getSoccerTeams } from './data/soccerLeagues';
 
 
 export default function App() {
@@ -46,18 +48,26 @@ export default function App() {
     }
   };
 
-  const handleSelectLeague = (leagueId) => {
-  const leagueData = getLeagueById(leagueId);
-  const teams = getTeamsForLeague(leagueId);
+ const handleSelectLeague = (leagueId) => {
+  let leagueData, teams;
+  
+  if (career.currentSport === 'basketball') {
+    leagueData = getBasketballLeagueById(leagueId);
+    teams = getBasketballTeams(leagueId);
+  } else if (career.currentSport === 'soccer') {
+    leagueData = getSoccerLeagueById(leagueId);
+    teams = getSoccerTeams(leagueId);
+  } else {
+    // Cricket - coming later
+    return;
+  }
   
   const newLeague = createLeague(leagueData.fullName, career.currentSport);
   
-  // Override with real league data
   newLeague.id = leagueId;
   newLeague.hasSalaryCap = leagueData.hasSalaryCap;
   newLeague.rules.salaryCap = leagueData.salaryCap;
   
-  // Add all real teams
   let updatedLeague = newLeague;
   teams.forEach(team => {
     const result = addTeamToLeague(updatedLeague, team);
@@ -69,6 +79,7 @@ export default function App() {
   setLeague(updatedLeague);
   setScreen('commissioner-dashboard');
 };
+
   // Team Manager handlers
   const handleReleasePlayer = (playerName) => {
     const result = removePlayer(team, playerName);
