@@ -15,6 +15,9 @@ import { getSportConfig } from './data/sportConfig';
 import { createGame, simulateGame, getGameSummary } from './engines/basketball/gameManager';
 import DemoDashboard from './components/DemoDashboard';
 import IntroScreen from './components/IntroScreen';
+import LeagueSelect from './components/leagueSelect';
+import { getLeagueById, getTeamsForLeague } from './data/basketballLeagues';
+
 
 export default function App() {
   const [career, setCareer] = useState(null);
@@ -23,9 +26,10 @@ export default function App() {
   const [competition, setCompetition] = useState(null);
   const [screen, setScreen] = useState('intro');
 
-  const handleCareerComplete = ({ playerName, sport, role }) => {
+  const handleCareerComplete = ({ profile, playerName, sport, role }) => {
     let newCareer = createNewCareer(playerName);
     newCareer = selectRole(newCareer, role, sport);
+    newCareer.profile = profile;
     setCareer(newCareer);
 
     const config = getSportConfig(sport);
@@ -35,14 +39,36 @@ export default function App() {
       setTeam(newTeam);
       setScreen('team-dashboard');
     } else if (role === 'commissioner') {
-      const newLeague = createLeague(`${playerName}'s ${config.name} League`, sport);
-      setLeague(newLeague);
-      setScreen('commissioner-dashboard');
+      // Go to league selection instead of creating empty league
+      setScreen('league-select');
     } else {
       setScreen('dashboard');
     }
   };
 
+  const handleSelectLeague = (leagueId) => {
+  const leagueData = getLeagueById(leagueId);
+  const teams = getTeamsForLeague(leagueId);
+  
+  const newLeague = createLeague(leagueData.fullName, career.currentSport);
+  
+  // Override with real league data
+  newLeague.id = leagueId;
+  newLeague.hasSalaryCap = leagueData.hasSalaryCap;
+  newLeague.rules.salaryCap = leagueData.salaryCap;
+  
+  // Add all real teams
+  let updatedLeague = newLeague;
+  teams.forEach(team => {
+    const result = addTeamToLeague(updatedLeague, team);
+    if (result.success) {
+      updatedLeague = result.league;
+    }
+  });
+  
+  setLeague(updatedLeague);
+  setScreen('commissioner-dashboard');
+};
   // Team Manager handlers
   const handleReleasePlayer = (playerName) => {
     const result = removePlayer(team, playerName);
@@ -142,6 +168,16 @@ if (screen === 'career-setup') {
     <CareerSetup 
       onComplete={handleCareerComplete} 
       onBack={() => setScreen('intro')}
+    />
+  );
+}
+
+if (screen === 'league-select') {
+  return (
+    <LeagueSelect 
+      sport={career.currentSport}
+      onSelectLeague={handleSelectLeague}
+      onBack={() => setScreen('career-setup')}
     />
   );
 }
