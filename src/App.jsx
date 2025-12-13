@@ -138,26 +138,49 @@ if (screen === 'intro' || screen === 'setup') {
 
 // Career Setup
 if (screen === 'career-setup') {
-  return <CareerSetup onComplete={handleCareerComplete} />;
+  return (
+    <CareerSetup 
+      onComplete={handleCareerComplete} 
+      onBack={() => setScreen('intro')}
+    />
+  );
 }
 
   // ========== TEAM MANAGER SCREENS ==========
-  if (screen === 'team-dashboard') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-800 to-slate-900 p-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-white text-center mb-8">
-            🏆 {career.playerName}'s Career
-          </h1>
-          <TeamDashboard 
-            team={team}
-            onViewRoster={() => setScreen('roster')}
-            onSignPlayer={() => setScreen('sign-player')}
-          />
+if (screen === 'team-dashboard') {
+  return (
+    <TeamDashboard 
+      team={team}
+      onViewRoster={() => setScreen('roster')}
+      onSignPlayer={() => setScreen('sign-player')}
+      onEnterCompetition={() => setScreen('enter-competition')}
+    />
+  );
+}
+
+if (screen === 'enter-competition') {
+  return (
+    <div className="min-h-screen bg-black p-8">
+      <div className="max-w-4xl mx-auto">
+        <button
+          onClick={() => setScreen('team-dashboard')}
+          className="text-white/60 hover:text-white transition-colors text-sm mb-8"
+        >
+          ← Back
+        </button>
+        <h2 
+          className="text-3xl font-bold text-white uppercase tracking-wider mb-8"
+          style={{ fontFamily: 'Arial Black, sans-serif' }}
+        >
+          Enter Competition
+        </h2>
+        <div className="bg-white/5 border border-white/10 p-8 text-center text-white/40">
+          Competition selection coming soon...
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   if (screen === 'roster') {
     return (

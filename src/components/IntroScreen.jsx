@@ -38,7 +38,7 @@ export default function IntroScreen({ onNewCareer, onContinue }) {
   const sport = sports[currentSport];
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
+    <div className="h-screen w-full overflow-hidden relative">
       {/* Background Image */}
       <div 
         className={`absolute inset-0 transition-opacity duration-500 ${fade ? 'opacity-100' : 'opacity-0'}`}
@@ -53,12 +53,12 @@ export default function IntroScreen({ onNewCareer, onContinue }) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/40" />
 
       {/* Content */}
-      <div className="relative z-10 min-h-screen flex flex-col justify-between p-8">
+      <div className="relative z-10 h-full flex flex-col p-8">
         
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-shrink-0">
           <div 
-            className="text-3xl font-serif italic text-white tracking-wide"
+            className="text-2xl font-serif italic text-white tracking-wide"
             style={{ fontFamily: 'Georgia, serif' }}
           >
             front office.
@@ -75,15 +75,15 @@ export default function IntroScreen({ onNewCareer, onContinue }) {
           </div>
         </div>
 
-        {/* Main Content */}
+        {/* Main Content - Centered */}
         <div className="flex-1 flex flex-col justify-center items-center text-center">
           <h1 
-            className={`text-6xl md:text-7xl font-serif text-white mb-4 transition-opacity duration-500 ${fade ? 'opacity-100' : 'opacity-0'}`}
+            className={`text-5xl md:text-6xl font-serif text-white mb-4 transition-opacity duration-500 ${fade ? 'opacity-100' : 'opacity-0'}`}
             style={{ fontFamily: 'Georgia, serif' }}
           >
             Build Your Legacy
           </h1>
-          <p className={`text-xl text-white/70 mb-12 transition-opacity duration-500 ${fade ? 'opacity-100' : 'opacity-0'}`}>
+          <p className={`text-lg text-white/70 mb-8 transition-opacity duration-500 ${fade ? 'opacity-100' : 'opacity-0'}`}>
             Manage teams. Run leagues. Become a legend.
           </p>
 
@@ -91,13 +91,13 @@ export default function IntroScreen({ onNewCareer, onContinue }) {
           <div className="flex gap-4">
             <button
               onClick={onNewCareer}
-              className="px-8 py-4 bg-white text-black font-semibold rounded-full hover:bg-white/90 transition-all duration-200 shadow-lg"
+              className="px-8 py-3 bg-white text-black font-semibold rounded-full hover:bg-white/90 transition-all duration-200 shadow-lg"
             >
               New Career
             </button>
             <button
               onClick={onContinue}
-              className="px-8 py-4 bg-transparent text-white font-semibold rounded-full border-2 border-white/60 hover:bg-white/10 hover:border-white transition-all duration-200"
+              className="px-8 py-3 bg-transparent text-white font-semibold rounded-full border-2 border-white/60 hover:bg-white/10 hover:border-white transition-all duration-200"
             >
               Continue
             </button>
@@ -105,7 +105,7 @@ export default function IntroScreen({ onNewCareer, onContinue }) {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center text-white/50 text-sm">
+        <div className="flex justify-between items-center text-white/50 text-sm flex-shrink-0">
           <span>© 2024 Front Office</span>
           <span className="capitalize">{sport.name}</span>
         </div>
