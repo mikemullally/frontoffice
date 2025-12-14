@@ -19,7 +19,9 @@ import LeagueSelect from './components/leagueSelect';
 import { getLeagueById, getTeamsForLeague } from './data/basketballLeagues';
 import { getLeagueById as getBasketballLeagueById, getTeamsForLeague as getBasketballTeams } from './data/basketballLeagues';
 import { getLeagueById as getSoccerLeagueById, getTeamsForLeague as getSoccerTeams } from './data/soccerLeagues';
-
+import { getLeagueById as getCricketLeagueById, getTeamsForLeague as getCricketTeams } from './data/cricketLeagues';
+import { createSeason, startSeason, advanceWeek, advancePhase } from './core/seasonManager';
+import CommissionerSeasonDashboard from './components/commissionerSeasonDashboard';
 
 export default function App() {
   const [career, setCareer] = useState(null);
@@ -27,6 +29,7 @@ export default function App() {
   const [league, setLeague] = useState(null);
   const [competition, setCompetition] = useState(null);
   const [screen, setScreen] = useState('intro');
+  const [season, setSeason] = useState(null);
 
   const handleCareerComplete = ({ profile, playerName, sport, role }) => {
     let newCareer = createNewCareer(playerName);
@@ -48,7 +51,7 @@ export default function App() {
     }
   };
 
- const handleSelectLeague = (leagueId) => {
+const handleSelectLeague = (leagueId) => {
   let leagueData, teams;
   
   if (career.currentSport === 'basketball') {
@@ -57,8 +60,10 @@ export default function App() {
   } else if (career.currentSport === 'soccer') {
     leagueData = getSoccerLeagueById(leagueId);
     teams = getSoccerTeams(leagueId);
+  } else if (career.currentSport === 'cricket') {
+    leagueData = getCricketLeagueById(leagueId);
+    teams = getCricketTeams(leagueId);
   } else {
-    // Cricket - coming later
     return;
   }
   
@@ -67,6 +72,8 @@ export default function App() {
   newLeague.id = leagueId;
   newLeague.hasSalaryCap = leagueData.hasSalaryCap;
   newLeague.rules.salaryCap = leagueData.salaryCap;
+  newLeague.format = leagueData.format;
+  newLeague.isInternational = leagueData.isInternational || false;
   
   let updatedLeague = newLeague;
   teams.forEach(team => {
@@ -107,24 +114,15 @@ export default function App() {
   };
 
   const handleStartSeason = () => {
-    if (league.teams.length < 4) {
-      alert('Need at least 4 teams to start a season');
-      return;
-    }
-
-    const newCompetition = createCompetition(
-      `${league.name} Season`,
-      league.sport,
-      COMPETITION_TYPES.LEAGUE,
-      league.teams
-    );
-
-    const result = generateSchedule(newCompetition);
+    const newSeason = createSeason(league);
+    const result = startSeason(newSeason);
+    
     if (result.success) {
-      setCompetition(result.competition);
-      setScreen('competition-dashboard');
+      setSeason(result.season);
+      setScreen('commissioner-season');
     }
   };
+
 
   // Competition handlers
 const handlePlayNextGame = () => {
@@ -267,20 +265,39 @@ if (screen === 'enter-competition') {
   // ========== COMMISSIONER SCREENS ==========
   if (screen === 'commissioner-dashboard') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-800 to-slate-900 p-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-white text-center mb-8">
-            🏆 {career.playerName}'s Career
-          </h1>
-          <CommissionerDashboard 
-            league={league}
-            onManageTeams={() => setScreen('league-teams')}
-            onEditRules={() => setScreen('league-rules')}
-            onManageRevenue={() => setScreen('league-revenue')}
-            onStartSeason={handleStartSeason}
-          />
-        </div>
-      </div>
+      <CommissionerDashboard
+        league={league}
+        onManageTeams={() => setScreen('league-teams')}
+        onEditRules={() => setScreen('league-rules')}
+        onManageRevenue={() => setScreen('league-revenue')}
+        onStartSeason={handleStartSeason}
+      />
+    );
+  }
+
+  if (screen === 'commissioner-season') {
+    return (
+      <CommissionerSeasonDashboard
+        season={season}
+        league={league}
+        onAdvanceWeek={() => {
+          const result = advanceWeek(season);
+          if (result.success) {
+            setSeason(result.season);
+          }
+        }}
+        onAdvancePhase={() => {
+          const result = advancePhase(season);
+          if (result.success) {
+            setSeason(result.season);
+          }
+        }}
+        onPhaseAction={(action) => {
+          console.log('Phase action:', action);
+          // We'll implement these later
+        }}
+        onBack={() => setScreen('commissioner-dashboard')}
+      />
     );
   }
 
