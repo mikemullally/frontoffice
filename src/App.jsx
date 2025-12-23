@@ -17,11 +17,16 @@ import DemoDashboard from './components/DemoDashboard';
 import IntroScreen from './components/IntroScreen';
 import LeagueSelect from './components/leagueSelect';
 import { getLeagueById, getTeamsForLeague } from './data/basketballLeagues';
-import { getLeagueById as getBasketballLeagueById, getTeamsForLeague as getBasketballTeams } from './data/basketballLeagues';
-import { getLeagueById as getSoccerLeagueById, getTeamsForLeague as getSoccerTeams } from './data/soccerLeagues';
-import { getLeagueById as getCricketLeagueById, getTeamsForLeague as getCricketTeams } from './data/cricketLeagues';
+import { getLeagueById as getBasketballLeagueById, getTeamsForLeague as getBasketballTeams, getLeagueList as getBasketballLeagues } from './data/basketballLeagues';
+import { getLeagueById as getSoccerLeagueById, getTeamsForLeague as getSoccerTeams, getLeagueList as getSoccerLeagues } from './data/soccerLeagues';
+import { getLeagueById as getCricketLeagueById, getTeamsForLeague as getCricketTeams, getLeagueList as getCricketLeagues } from './data/cricketLeagues';
 import { createSeason, startSeason, advanceWeek, advancePhase } from './core/seasonManager';
 import CommissionerSeasonDashboard from './components/commissionerSeasonDashboard';
+import { createSeasonSchedule, simulateDay, simulateDays, simulateRegularSeason } from './core/scheduleEngine';
+import { getLeagueConfig } from './data/leagueConfigs';
+import SeasonCalendarDashboard from './components/SeasonCalendarDashboard';
+import LeagueEditor from './components/LeagueEditor';
+import LeagueSettings from './components/LeagueSettings';
 
 export default function App() {
   const [career, setCareer] = useState(null);
@@ -50,6 +55,92 @@ export default function App() {
       setScreen('dashboard');
     }
   };
+
+const handleCreateCustomLeague = (name) => {
+  const sport = career.currentSport;
+  const newLeague = {
+    id: `custom_${Date.now()}`,
+    name,
+    isCustom: true,
+    teams: [],
+    config: {
+      gamesPerTeam: sport === 'basketball' ? 82 : sport === 'soccer' ? 38 : 14,
+      startDate: '2024-10-01',
+      minDaysBetweenGames: sport === 'basketball' ? 1 : 3,
+      maxGamesPerWeek: sport === 'basketball' ? 4 : 2,
+      backToBackAllowed: sport === 'basketball',
+      playoffTeams: sport === 'soccer' ? 0 : 8,
+      playoffRounds: sport === 'soccer' ? 0 : 3,
+      playoffGamesPerRound: sport === 'basketball' ? 7 : 1,
+      allowDraws: sport !== 'basketball',
+      pointsForWin: sport === 'soccer' ? 3 : sport === 'cricket' ? 2 : 0,
+      pointsForDraw: 1,
+      pointsForLoss: 0
+    }
+  };
+  
+  setEditingLeague(newLeague);
+  setScreen('league-settings');
+};
+
+const handleSaveLeague = (updatedLeague) => {
+  const sport = career.currentSport;
+  
+  setCustomLeagues(prev => {
+    const sportLeagues = prev[sport] || [];
+    const existingIndex = sportLeagues.findIndex(l => l.id === updatedLeague.id);
+    
+    if (existingIndex >= 0) {
+      // Update existing
+      const updated = [...sportLeagues];
+      updated[existingIndex] = updatedLeague;
+      return { ...prev, [sport]: updated };
+    } else {
+      // Add new
+      return { ...prev, [sport]: [...sportLeagues, updatedLeague] };
+    }
+  });
+  
+  setEditingLeague(null);
+  setScreen('league-editor');
+};
+
+const handleDeleteLeague = () => {
+  if (!editingLeague || !editingLeague.isCustom) return;
+  
+  const sport = career.currentSport;
+  
+  setCustomLeagues(prev => ({
+    ...prev,
+    [sport]: (prev[sport] || []).filter(l => l.id !== editingLeague.id)
+  }));
+  
+  setEditingLeague(null);
+  setScreen('league-editor');
+};
+
+const handleSelectLeagueForEdit = (league) => {
+  setEditingLeague(league);
+  setScreen('league-settings');
+};
+
+const handleStartCustomLeague = (league) => {
+  // Use custom league config
+  const schedule = createSeasonSchedule(league.teams, league.config);
+  
+  const newLeague = {
+    id: league.id,
+    name: league.name,
+    sport: career.currentSport,
+    teams: league.teams,
+    isCustom: true,
+    config: league.config
+  };
+  
+  setLeague(newLeague);
+  setSeason(schedule);
+  setScreen('season-calendar');
+};
 
 const handleSelectLeague = (leagueId) => {
   let leagueData, teams;
@@ -114,13 +205,14 @@ const handleSelectLeague = (leagueId) => {
   };
 
   const handleStartSeason = () => {
-    const newSeason = createSeason(league);
-    const result = startSeason(newSeason);
+    // Get league config for scheduling
+    const config = getLeagueConfig(league.id, league.sport);
     
-    if (result.success) {
-      setSeason(result.season);
-      setScreen('commissioner-season');
-    }
+    // Create the schedule
+    const schedule = createSeasonSchedule(league.teams, config);
+    
+    setSeason(schedule);
+    setScreen('season-calendar');
   };
 
 
@@ -160,6 +252,77 @@ const handlePlayNextGame = () => {
     setCompetition(result.competition);
   }
 };
+
+const [customLeagues, setCustomLeagues] = useState({
+  basketball: [],
+  soccer: [],
+  cricket: []
+});
+const [editingLeague, setEditingLeague] = useState(null);
+
+const getAllLeaguesForSport = (sport) => {
+  // Get built-in leagues
+  let builtInLeagues = [];
+  if (sport === 'basketball') {
+    builtInLeagues = getBasketballLeagues().map(l => ({ ...l, isCustom: false }));
+  } else if (sport === 'soccer') {
+    builtInLeagues = getSoccerLeagues().map(l => ({ ...l, isCustom: false }));
+  } else if (sport === 'cricket') {
+    builtInLeagues = getCricketLeagues().map(l => ({ ...l, isCustom: false }));
+  }
+  
+  // Add custom leagues
+  const custom = customLeagues[sport] || [];
+  
+  return [...builtInLeagues, ...custom];
+};
+
+
+  const simulateGame = (homeTeam, awayTeam) => {
+    // Simple rating-based simulation
+    const homeRating = homeTeam.rating || 70;
+    const awayRating = awayTeam.rating || 70;
+    const homeAdvantage = 3;
+    
+    // Basketball scores
+    if (league.sport === 'basketball') {
+      const homeBase = 95 + (homeRating - 70) * 0.5 + homeAdvantage;
+      const awayBase = 95 + (awayRating - 70) * 0.5;
+      
+      const homeScore = Math.round(homeBase + (Math.random() - 0.5) * 30);
+      const awayScore = Math.round(awayBase + (Math.random() - 0.5) * 30);
+      
+      // No ties in basketball
+      if (homeScore === awayScore) {
+        return { homeScore: homeScore + 1, awayScore };
+      }
+      return { homeScore, awayScore };
+    }
+    
+    // Soccer scores
+    if (league.sport === 'soccer') {
+      const homeStrength = (homeRating / 100) + 0.1; // Home advantage
+      const awayStrength = awayRating / 100;
+      
+      const homeScore = Math.floor(Math.random() * 3 * homeStrength + Math.random());
+      const awayScore = Math.floor(Math.random() * 3 * awayStrength + Math.random());
+      
+      return { homeScore, awayScore };
+    }
+    
+    // Cricket scores
+    if (league.sport === 'cricket') {
+      const homeBase = 150 + (homeRating - 70) * 2;
+      const awayBase = 150 + (awayRating - 70) * 2;
+      
+      const homeScore = Math.round(homeBase + (Math.random() - 0.5) * 80);
+      const awayScore = Math.round(awayBase + (Math.random() - 0.5) * 80);
+      
+      return { homeScore, awayScore };
+    }
+    
+    return { homeScore: 0, awayScore: 0 };
+  };
 
 // Intro Screen
 if (screen === 'intro' || screen === 'setup') {
@@ -270,7 +433,17 @@ if (screen === 'enter-competition') {
         onManageTeams={() => setScreen('league-teams')}
         onEditRules={() => setScreen('league-rules')}
         onManageRevenue={() => setScreen('league-revenue')}
+        onEditLeagues={() => setScreen('league-editor')}
         onStartSeason={handleStartSeason}
+        onBack={() => setScreen('league-select')}
+        onQuit={() => {
+          setCareer(null);
+          setTeam(null);
+          setLeague(null);
+          setSeason(null);
+          setCompetition(null);
+          setScreen('intro');
+        }}
       />
     );
   }
@@ -431,6 +604,94 @@ if (screen === 'enter-competition') {
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (screen === 'season-calendar') {
+    return (
+      <SeasonCalendarDashboard
+        schedule={season}
+        league={league}
+        onSimulateDay={() => {
+          const result = simulateDay(season, simulateGame);
+          if (result.success) {
+            setSeason(result.schedule);
+          }
+        }}
+        onSimulateWeek={() => {
+          const result = simulateDays(season, simulateGame, 7);
+          if (result.success) {
+            setSeason(result.schedule);
+          }
+        }}
+        onSimulateSeason={() => {
+          const result = simulateRegularSeason(season, simulateGame);
+          if (result.success) {
+            setSeason(result.schedule);
+          }
+        }}
+        onBack={() => setScreen('commissioner-dashboard')}
+        onQuit={() => {
+          // Reset all state and go to intro
+          setCareer(null);
+          setTeam(null);
+          setLeague(null);
+          setSeason(null);
+          setCompetition(null);
+          setScreen('intro');
+        }}
+      />
+    );
+  }
+
+  if (screen === 'league-editor') {
+  return (
+    <LeagueEditor
+      sport={career.currentSport}
+      leagues={getAllLeaguesForSport(career.currentSport)}
+      onSelectLeague={(league) => {
+        if (league.isCustom) {
+          handleSelectLeagueForEdit(league);
+        } else {
+          // For built-in leagues, go to league select to start season
+          handleSelectLeague(league.id);
+        }
+      }}
+      onCreateLeague={handleCreateCustomLeague}
+      onBack={() => setScreen('commissioner-dashboard')}
+      onQuit={() => {
+        setCareer(null);
+        setTeam(null);
+        setLeague(null);
+        setSeason(null);
+        setCompetition(null);
+        setScreen('intro');
+      }}
+    />
+  );
+}
+
+  if (screen === 'league-settings') {
+    return (
+      <LeagueSettings
+        league={editingLeague}
+        sport={career.currentSport}
+        onSave={handleSaveLeague}
+        onDelete={editingLeague?.isCustom ? handleDeleteLeague : null}
+        onBack={() => {
+          setEditingLeague(null);
+          setScreen('league-editor');
+        }}
+        onQuit={() => {
+          setCareer(null);
+          setTeam(null);
+          setLeague(null);
+          setSeason(null);
+          setCompetition(null);
+          setEditingLeague(null);
+          setScreen('intro');
+        }}
+      />
     );
   }
 }

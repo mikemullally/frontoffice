@@ -1,6 +1,7 @@
 import React from 'react';
 import { getLeagueRevenue, canStartSeason } from '../core/commissionerManager';
 import { getSportConfig } from '../data/sportConfig';
+import QuitButton from './ui/QuitButton';
 
 const sportImages = {
   basketball: 'https://images.unsplash.com/photo-1504450758481-7338bbe7524a?auto=format&fit=crop&w=1920&q=80',
@@ -13,7 +14,10 @@ export default function CommissionerDashboard({
   onManageTeams, 
   onEditRules,
   onManageRevenue,
-  onStartSeason 
+  onEditLeagues,
+  onStartSeason,
+  onBack,
+  onQuit
 }) {
   const config = getSportConfig(league.sport);
   const revenue = getLeagueRevenue(league);
@@ -39,6 +43,20 @@ export default function CommissionerDashboard({
           style={{ backgroundImage: `url(${sportImages[league.sport]})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/40" />
+        
+        {/* Navigation */}
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-4">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="text-white/60 hover:text-white transition-colors text-sm"
+            >
+              ← Back
+            </button>
+          )}
+          <div className="h-4 w-px bg-white/20" />
+          <QuitButton onQuit={onQuit} />
+        </div>
         
         <div className="relative z-10 h-full flex items-end p-6">
           <div className="flex items-end justify-between w-full">
@@ -108,8 +126,8 @@ export default function CommissionerDashboard({
             </div>
           </div>
 
-          {/* Action Tiles */}
-          <div className="flex-1 grid grid-cols-3 gap-4 min-h-0">
+          {/* Action Tiles - Now 4 columns */}
+          <div className="flex-1 grid grid-cols-4 gap-4 min-h-0">
             
             <button
               onClick={onManageTeams}
@@ -184,6 +202,32 @@ export default function CommissionerDashboard({
                   </p>
                   <p className="text-white/60 text-xs mt-1">
                     TV & deals
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={onEditLeagues}
+              className="relative overflow-hidden group"
+            >
+              <div 
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                style={{ 
+                  backgroundImage: 'url(https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80)' 
+                }}
+              />
+              <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors" />
+              <div className="absolute inset-0 flex items-end p-4">
+                <div>
+                  <p 
+                    className="text-white text-lg font-bold uppercase tracking-wider"
+                    style={{ fontFamily: 'Arial Black, sans-serif' }}
+                  >
+                    Leagues
+                  </p>
+                  <p className="text-white/60 text-xs mt-1">
+                    Create & edit
                   </p>
                 </div>
               </div>
